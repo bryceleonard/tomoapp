@@ -10,13 +10,15 @@ export default function Signup() {
 
   const handleSignup = async () => {
     try {
-      console.log('Attempting to sign up with:', { email });
       if (!email || !password) {
-        throw new Error('Email and password are required');
+        setError('Email and password are required');
+        return;
       }
       
+      console.log('Attempting to sign up with:', { email });
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log('Signup successful:', userCredential.user);
+      setError(''); // Clear any previous errors on success
     } catch (err: any) {
       console.error('Signup error:', err);
       let errorMessage = 'An error occurred during signup';
