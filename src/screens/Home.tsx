@@ -3,13 +3,54 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 
+// TODO: Move this to a config file
+const API_BASE_URL = 'http://192.168.0.33:3000';
+
 export default function Home() {
   const [feeling, setFeeling] = useState('');
   const [duration, setDuration] = useState(3);
 
-  const handleGenerate = () => {
-    // TODO: Implement meditation generation logic
-    console.log('Generating meditation for:', { feeling, duration });
+  const handleGenerate = async () => {
+    console.log('=== Starting handleGenerate ===');
+    try {
+      console.log('Checking current user...');
+      const currentUser = auth.currentUser;
+      console.log('Current user:', currentUser);
+      
+      if (!currentUser) {
+        console.log('No user found, throwing error');
+        throw new Error('No user logged in');
+      }
+
+      console.log('Generating meditation for:', { feeling, duration });
+      
+      console.log('Making API request...');
+      const response = await fetch(`${API_BASE_URL}/api/meditation/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          feeling,
+          duration,
+          userId: currentUser.uid,
+        }),
+      });
+
+      console.log('Response received:', response.status);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const meditation = await response.json();
+      console.log('Meditation generated:', meditation);
+      
+      // TODO: Navigate to meditation screen with the generated meditation
+      // navigation.navigate('Meditation', { meditation });
+    } catch (error) {
+      console.error('Error in handleGenerate:', error);
+      // TODO: Show error to user
+    }
   };
 
   return (
