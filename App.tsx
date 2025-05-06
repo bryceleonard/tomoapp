@@ -1,32 +1,46 @@
 import React from 'react';
 import { Text, View, StyleSheet, SafeAreaView } from 'react-native';
+import { NavigationContainer } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthProvider } from './src/auth/AuthProvider';
 import { useAuth } from './src/auth/useAuth';
 import Login from './src/screens/Login';
 import Signup from './src/screens/Signup';
 import Home from './src/screens/Home';
+import MeditationScreen from './src/screens/MeditationScreen';
+import { RootStackParamList } from './src/types/navigation';
 
-function Main() {
+const Stack = createNativeStackNavigator<RootStackParamList>();
+
+function Navigation() {
   const { user } = useAuth();
-  if (!user) {
-    return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.authContainer}>
-          <Text style={styles.title}>Welcome to TomoApp</Text>
-          <Login />
-          <Signup />
-        </View>
-      </SafeAreaView>
-    );
-  }
-  return <Home />;
+
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      {user ? (
+        // Authenticated stack
+        <>
+          <Stack.Screen name="Home" component={Home} />
+          <Stack.Screen name="Meditation" component={MeditationScreen} />
+        </>
+      ) : (
+        // Unauthenticated stack
+        <>
+          <Stack.Screen name="Login" component={Login} />
+          <Stack.Screen name="Signup" component={Signup} />
+        </>
+      )}
+    </Stack.Navigator>
+  );
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <Main />
-    </AuthProvider>
+    <NavigationContainer>
+      <AuthProvider>
+        <Navigation />
+      </AuthProvider>
+    </NavigationContainer>
   );
 }
 

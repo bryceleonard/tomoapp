@@ -1,17 +1,41 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
+import { useNavigation, useIsFocused } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
 
 // TODO: Move this to a config file
 const API_BASE_URL = 'http://192.168.0.33:3000';
 
+type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+
+interface Meditation {
+  id: string;
+  text: string;
+  audioUrl: string;
+  audioDuration: number;
+  createdAt: Date;
+}
+
 export default function Home() {
   const [feeling, setFeeling] = useState('');
   const [duration, setDuration] = useState(3);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isReady, setIsReady] = useState(false);
+  const navigation = useNavigation<HomeScreenNavigationProp>();
+  const isFocused = useIsFocused();
+
+  useEffect(() => {
+    if (isFocused) {
+      setIsReady(true);
+    }
+  }, [isFocused]);
 
   const handleGenerate = async () => {
     console.log('=== Starting handleGenerate ===');
+    setIsLoading(true);
     try {
       console.log('Checking current user...');
       const currentUser = auth.currentUser;
@@ -45,13 +69,23 @@ export default function Home() {
       const meditation = await response.json();
       console.log('Meditation generated:', meditation);
       
-      // TODO: Navigate to meditation screen with the generated meditation
-      // navigation.navigate('Meditation', { meditation });
+      // Navigate to meditation screen with the generated meditation
+      navigation.navigate('Meditation', { feeling, duration });
     } catch (error) {
       console.error('Error in handleGenerate:', error);
       // TODO: Show error to user
+    } finally {
+      setIsLoading(false);
     }
   };
+
+  if (!isReady) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color="#2c3e50" />
+      </View>
+    );
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -96,8 +130,16 @@ export default function Home() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.generateButton} onPress={handleGenerate}>
-          <Text style={styles.generateButtonText}>Generate Meditation</Text>
+        <TouchableOpacity 
+          style={[styles.generateButton, isLoading && styles.generateButtonDisabled]} 
+          onPress={handleGenerate}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <Text style={styles.generateButtonText}>Generate Meditation</Text>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -184,6 +226,9 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
+  },
+  generateButtonDisabled: {
+    opacity: 0.7,
   },
   generateButtonText: {
     color: '#ffffff',

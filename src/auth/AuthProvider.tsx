@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
+import { View, ActivityIndicator } from 'react-native';
 
 export const AuthContext = createContext<{ 
   user: User | null;
@@ -21,19 +22,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setLoading(false);
+    }, (error) => {
+      setError(error);
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const value = {
-    user,
-    loading,
-    error
-  };
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#2c3e50" />
+      </View>
+    );
+  }
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, error }}>
       {children}
     </AuthContext.Provider>
   );
