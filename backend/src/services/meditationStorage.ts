@@ -4,14 +4,14 @@ import * as admin from 'firebase-admin';
 
 export async function saveMeditation(meditation: Meditation): Promise<Meditation> {
   try {
-    const meditationRef = await db.collection('meditations').add({
+    const docRef = await db.collection('meditations').add({
       ...meditation,
       createdAt: admin.firestore.Timestamp.fromDate(meditation.createdAt)
     });
 
     return {
       ...meditation,
-      id: meditationRef.id
+      id: docRef.id
     };
   } catch (error) {
     console.error('Error saving meditation:', error);
