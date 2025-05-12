@@ -14,52 +14,62 @@ type MeditationScreenRouteProp = RouteProp<RootStackParamList, 'Meditation'>;
 export default function MeditationScreen() {
   const navigation = useNavigation<MeditationScreenNavigationProp>();
   const route = useRoute<MeditationScreenRouteProp>();
-  const { feeling, duration } = route.params;
   const [meditation, setMeditation] = useState<Meditation | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchMeditation = async () => {
+    const initializeMeditation = async () => {
+      // If we have a complete meditation object, use it directly
+      if ('meditation' in route.params) {
+        setMeditation(route.params.meditation);
+        return;
+      }
+
+      // Otherwise, generate a new meditation
       try {
         setIsLoading(true);
         setError(null);
+        const { feeling, duration } = route.params;
         const currentUser = auth.currentUser;
-        const userId = currentUser ? currentUser.uid : undefined;
-        if (!userId) {
+        if (!currentUser) {
           setError('You must be logged in to generate a meditation.');
-          setIsLoading(false);
           return;
         }
+
         const response = await fetch(`${API_BASE_URL}/api/meditation/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`
           },
           body: JSON.stringify({
             feeling,
             duration,
-            userId,
+            userId: currentUser.uid,
           }),
         });
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
+
         const meditationData = await response.json();
         setMeditation(meditationData);
         await setVolume(1.0);
-        setIsLoading(false);
-      } catch (err: any) {
+      } catch (err) {
         setError('Failed to generate meditation. Please try again.');
+      } finally {
         setIsLoading(false);
       }
     };
-    fetchMeditation();
+
+    initializeMeditation();
     return () => {
       stopAudio();
     };
-  }, [feeling, duration]);
+  }, [route.params]);
 
   const handlePlayPause = async () => {
     if (!meditation) return;
@@ -82,6 +92,10 @@ export default function MeditationScreen() {
     } catch (err) {
       setError('Failed to stop audio playback');
     }
+  };
+
+  const handleViewLibrary = () => {
+    navigation.navigate('Library');
   };
 
   if (isLoading) {
@@ -109,7 +123,6 @@ export default function MeditationScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Meditation</Text>
-      <Text style={styles.text}>{meditation.text}</Text>
       <View style={styles.controls}>
         <TouchableOpacity style={styles.button} onPress={handlePlayPause}>
           <Text style={styles.buttonText}>{isPlaying ? 'Pause' : 'Play'}</Text>
@@ -118,6 +131,9 @@ export default function MeditationScreen() {
           <Text style={styles.buttonText}>Stop</Text>
         </TouchableOpacity>
       </View>
+      <TouchableOpacity style={[styles.button, styles.libraryButton]} onPress={handleViewLibrary}>
+        <Text style={styles.buttonText}>View Library</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -135,15 +151,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  text: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 30,
-  },
   controls: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 20,
+    marginBottom: 20,
   },
   button: {
     backgroundColor: '#007AFF',
@@ -151,6 +163,10 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minWidth: 100,
     alignItems: 'center',
+  },
+  libraryButton: {
+    backgroundColor: '#2c3e50',
+    marginTop: 10,
   },
   buttonText: {
     color: '#fff',

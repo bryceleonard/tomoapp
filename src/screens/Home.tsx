@@ -53,6 +53,7 @@ export default function Home() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
         },
         body: JSON.stringify({
           feeling,
@@ -70,7 +71,7 @@ export default function Home() {
       console.log('Meditation generated:', meditation);
       
       // Navigate to meditation screen with the generated meditation
-      navigation.navigate('Meditation', { feeling, duration });
+      navigation.navigate('Meditation', { meditation });
     } catch (error) {
       console.error('Error in handleGenerate:', error);
       // TODO: Show error to user
@@ -91,9 +92,14 @@ export default function Home() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Tomo Meditation</Text>
-        <TouchableOpacity onPress={() => signOut(auth)} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity onPress={() => navigation.navigate('Library')} style={styles.headerButton}>
+            <Text style={styles.headerButtonText}>Library</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => signOut(auth)} style={styles.headerButton}>
+            <Text style={styles.headerButtonText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.formContainer}>
@@ -166,10 +172,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2c3e50',
   },
-  logoutButton: {
+  headerButtons: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  headerButton: {
     padding: 8,
   },
-  logoutText: {
+  headerButtonText: {
     color: '#6c757d',
     fontSize: 16,
   },

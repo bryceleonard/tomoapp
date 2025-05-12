@@ -21,19 +21,39 @@ export async function saveMeditation(meditation: Meditation): Promise<Meditation
 
 export async function getUserMeditations(userId: string): Promise<Meditation[]> {
   try {
+    console.log('=== MeditationStorage: Getting User Meditations ===');
+    console.log('User ID:', userId);
+    
     const snapshot = await db
       .collection('meditations')
       .where('userId', '==', userId)
-      .orderBy('createdAt', 'desc')
+      .limit(50)
+      .select('id', 'feeling', 'createdAt', 'audioUrl')
       .get();
 
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt.toDate()
-    })) as Meditation[];
-  } catch (error) {
-    console.error('Error fetching user meditations:', error);
+    console.log(`Found ${snapshot.docs.length} meditation documents`);
+    
+    const meditations = snapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        feeling: data.feeling,
+        createdAt: data.createdAt.toDate(),
+        audioUrl: data.audioUrl
+      } as Meditation;
+    });
+
+    return meditations;
+  } catch (error: unknown) {
+    console.error('=== Error in getUserMeditations ===');
+    if (error && typeof error === 'object' && 'constructor' in error) {
+      console.error('Error type:', error.constructor.name);
+    }
+    console.error('Error details:', error);
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 } 

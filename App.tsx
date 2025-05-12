@@ -8,6 +8,7 @@ import Login from './src/screens/Login';
 import Signup from './src/screens/Signup';
 import Home from './src/screens/Home';
 import MeditationScreen from './src/screens/MeditationScreen';
+import Library from './src/screens/Library';
 import { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -22,6 +23,7 @@ function Navigation() {
         <>
           <Stack.Screen name="Home" component={Home} />
           <Stack.Screen name="Meditation" component={MeditationScreen} />
+          <Stack.Screen name="Library" component={Library} />
         </>
       ) : (
         // Unauthenticated stack

@@ -1,6 +1,8 @@
+console.log('TEST LOG');
+import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
 import meditationRoutes from './routes/meditation';
 
 // Load environment variables
