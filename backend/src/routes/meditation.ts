@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { generateMeditation } from '../services/meditation';
 import { getUserMeditations } from '../services/meditationStorage';
+import { canGenerateMeditation, incrementMeditationCount } from '../services/userSubscription';
 import { auth } from '../config/firebase';
 import { DecodedIdToken } from 'firebase-admin/auth';
 
@@ -55,6 +56,15 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       });
     }
 
+    // Check if user can generate meditation
+    const canGenerate = await canGenerateMeditation(userId);
+    if (!canGenerate) {
+      return res.status(403).json({ 
+        error: 'Meditation limit reached',
+        message: 'You have reached your meditation limit. Please upgrade to continue.'
+      });
+    }
+
     console.log('Calling meditation service with:', { feeling, duration, userId });
     const meditation = await generateMeditation(feeling, duration, userId);
     console.log('Meditation generated successfully:', { 
@@ -62,6 +72,9 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
       audioUrl: meditation.audioUrl ? 'present' : 'missing',
       duration: meditation.duration
     });
+
+    // Increment meditation count
+    await incrementMeditationCount(userId);
     
     res.status(200).json(meditation);
   } catch (error) {

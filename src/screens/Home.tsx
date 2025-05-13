@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import { UpgradeModal } from '../components/UpgradeModal';
+import { Button, Text } from 'react-native-paper';
 
 // TODO: Move this to a config file
 const API_BASE_URL = 'http://192.168.0.33:3000';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-interface Meditation {
-  id: string;
-  text: string;
-  audioUrl: string;
-  audioDuration: number;
-  createdAt: Date;
+interface UserSubscription {
+  isPremium: boolean;
+  meditationCount: number;
 }
 
 export default function Home() {
@@ -24,14 +23,60 @@ export default function Home() {
   const [duration, setDuration] = useState(3);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const isFocused = useIsFocused();
+  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   useEffect(() => {
     if (isFocused) {
       setIsReady(true);
+      fetchSubscriptionStatus();
     }
   }, [isFocused]);
+
+  const fetchSubscriptionStatus = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      console.log('Fetching subscription status...');
+      const response = await fetch(`${API_BASE_URL}/api/subscription/status`, {
+        headers: {
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch subscription status');
+      
+      const data = await response.json();
+      console.log('Subscription data:', data);
+      setSubscription(data);
+    } catch (error) {
+      console.error('Error fetching subscription status:', error);
+    }
+  };
+
+  const handleUpgrade = async () => {
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) return;
+
+      const response = await fetch(`${API_BASE_URL}/api/subscription/create-checkout`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to create checkout session');
+      
+      const { url } = await response.json();
+      await Linking.openURL(url);
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+    }
+  };
 
   const handleGenerate = async () => {
     console.log('=== Starting handleGenerate ===');
@@ -46,10 +91,26 @@ export default function Home() {
         throw new Error('No user logged in');
       }
 
+      // Check if user can generate meditation
+      const response = await fetch(`${API_BASE_URL}/api/subscription/status`, {
+        headers: {
+          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to check subscription status');
+      }
+
+      const subscription = await response.json();
+      if (!subscription.isPremium && subscription.meditationCount >= 2) {
+        throw new Error('Free trial limit reached. Please upgrade to continue.');
+      }
+
       console.log('Generating meditation for:', { feeling, duration });
       
       console.log('Making API request...');
-      const response = await fetch(`${API_BASE_URL}/api/meditation/generate`, {
+      const meditationResponse = await fetch(`${API_BASE_URL}/api/meditation/generate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -62,12 +123,12 @@ export default function Home() {
         }),
       });
 
-      console.log('Response received:', response.status);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      console.log('Response received:', meditationResponse.status);
+      if (!meditationResponse.ok) {
+        throw new Error(`HTTP error! status: ${meditationResponse.status}`);
       }
 
-      const meditation = await response.json();
+      const meditation = await meditationResponse.json();
       console.log('Meditation generated:', meditation);
       
       // Navigate to meditation screen with the generated meditation
@@ -80,6 +141,11 @@ export default function Home() {
     }
   };
 
+  const handleUpgradeSuccess = () => {
+    setUpgradeModalVisible(false);
+    fetchSubscriptionStatus();
+  };
+
   if (!isReady) {
     return (
       <View style={styles.container}>
@@ -89,16 +155,33 @@ export default function Home() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Tomo Meditation</Text>
+        <Text variant="headlineMedium">Tomo</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity onPress={() => navigation.navigate('Library')} style={styles.headerButton}>
-            <Text style={styles.headerButtonText}>Library</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => signOut(auth)} style={styles.headerButton}>
-            <Text style={styles.headerButtonText}>Logout</Text>
-          </TouchableOpacity>
+          <Button
+            mode="text"
+            onPress={() => navigation.navigate('Library')}
+            style={styles.headerButton}
+          >
+            Library
+          </Button>
+          {!subscription?.isPremium && (
+            <Button
+              mode="text"
+              onPress={() => setUpgradeModalVisible(true)}
+              style={styles.headerButton}
+            >
+              Upgrade
+            </Button>
+          )}
+          <Button
+            mode="text"
+            onPress={() => signOut(auth)}
+            style={styles.headerButton}
+          >
+            Logout
+          </Button>
         </View>
       </View>
 
@@ -148,7 +231,13 @@ export default function Home() {
           )}
         </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      <UpgradeModal
+        visible={upgradeModalVisible}
+        onClose={() => setUpgradeModalVisible(false)}
+        onSuccess={handleUpgradeSuccess}
+      />
+    </View>
   );
 }
 
@@ -174,7 +263,7 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     flexDirection: 'row',
-    gap: 16,
+    alignItems: 'center',
   },
   headerButton: {
     padding: 8,
@@ -182,6 +271,11 @@ const styles = StyleSheet.create({
   headerButtonText: {
     color: '#6c757d',
     fontSize: 16,
+  },
+  upgradeButtonText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
   },
   formContainer: {
     padding: 20,

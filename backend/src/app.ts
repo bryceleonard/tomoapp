@@ -4,6 +4,8 @@ import express from 'express';
 import cors from 'cors';
 
 import meditationRoutes from './routes/meditation';
+import subscriptionRoutes from './routes/subscription';
+import webhookRoutes from './routes/webhooks';
 
 // Load environment variables
 dotenv.config();
@@ -13,6 +15,11 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
+
+// Register webhook route first!
+app.use('/api/webhooks', express.raw({ type: 'application/json' }), webhookRoutes);
+
+// Then register JSON parser for all other routes
 app.use(express.json());
 
 // Request logging middleware
@@ -26,6 +33,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use('/api/meditation', meditationRoutes);
+app.use('/api/subscription', subscriptionRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -49,4 +57,6 @@ app.listen(serverPort, '0.0.0.0', () => {
   console.log(`OpenAI API Key present: ${!!process.env.OPENAI_API_KEY}`);
   console.log(`Firebase Config present: ${!!process.env.FIREBASE_CONFIG}`);
   console.log(`Server accessible at: http://192.168.0.33:${serverPort}`);
-}); 
+});
+
+export default app; 

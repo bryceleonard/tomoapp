@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Text, View, StyleSheet, SafeAreaView } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import Home from './src/screens/Home';
 import MeditationScreen from './src/screens/MeditationScreen';
 import Library from './src/screens/Library';
 import { RootStackParamList } from './src/types/navigation';
+import { initializeStripe } from './src/config/stripe';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -37,6 +38,10 @@ function Navigation() {
 }
 
 export default function App() {
+  useEffect(() => {
+    initializeStripe();
+  }, []);
+
   return (
     <NavigationContainer>
       <AuthProvider>
