@@ -10,7 +10,6 @@ import Home from './src/screens/Home';
 import MeditationScreen from './src/screens/MeditationScreen';
 import Library from './src/screens/Library';
 import { RootStackParamList } from './src/types/navigation';
-import { initializeStripe } from './src/config/stripe';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -38,9 +37,7 @@ function Navigation() {
 }
 
 export default function App() {
-  useEffect(() => {
-    initializeStripe();
-  }, []);
+
 
   return (
     <NavigationContainer>
