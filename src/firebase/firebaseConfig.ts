@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: "tomo-461d4.firebaseapp.com",
   projectId: "tomo-461d4",
-  storageBucket: "tomo-461d4",
+  storageBucket: "tomo-461d4.appspot.com",
   messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
   appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
 };

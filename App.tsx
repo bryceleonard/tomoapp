@@ -154,11 +154,14 @@ function DrawerNav() {
 function Navigation() {
   const { user } = useAuth();
   return user ? (
-    <DrawerNav />
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
+      <Stack.Screen name="DrawerNav" component={DrawerNav} />
+      <Stack.Screen name="Meditation" component={MeditationScreen} />
+    </Stack.Navigator>
   ) : (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="Login" component={Login} options={{ animation: 'none' }} />
-      <Stack.Screen name="Signup" component={Signup} options={{ animation: 'none' }} />
+    <Stack.Navigator screenOptions={{ headerShown: false, animation: 'none' }}>
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Signup" component={Signup} />
     </Stack.Navigator>
   );
 }

@@ -95,7 +95,9 @@ export default function MeditationScreen() {
   };
 
   const handleViewLibrary = () => {
-    navigation.navigate('Library');
+    navigation.navigate('DrawerNav', {
+      screen: 'My Library'
+    });
   };
 
   if (isLoading) {

@@ -41,9 +41,11 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     const { feeling, duration } = req.body;
     
     if (!req.user) {
+      console.error('No user found in request');
       return res.status(401).json({ error: 'User not authenticated' });
     }
     const userId = req.user.uid;
+    console.log('Authenticated user ID:', userId);
 
     if (!feeling || !duration) {
       console.log('Missing required fields:', { feeling, duration });
@@ -57,24 +59,47 @@ router.post('/generate', authenticateUser, async (req: Request, res: Response) =
     }
 
     // Check if user can generate meditation
-    const canGenerate = await canGenerateMeditation(userId);
-    if (!canGenerate) {
-      return res.status(403).json({ 
-        error: 'Meditation limit reached',
-        message: 'You have reached your meditation limit. Please upgrade to continue.'
+    try {
+      const canGenerate = await canGenerateMeditation(userId);
+      if (!canGenerate) {
+        return res.status(403).json({ 
+          error: 'Meditation limit reached',
+          message: 'You have reached your meditation limit. Please upgrade to continue.'
+        });
+      }
+    } catch (error) {
+      console.error('Error checking meditation limit:', error);
+      return res.status(500).json({ 
+        error: 'Failed to check meditation limit',
+        message: error instanceof Error ? error.message : 'Unknown error'
       });
     }
 
     console.log('Calling meditation service with:', { feeling, duration, userId });
-    const meditation = await generateMeditation(feeling, duration, userId);
-    console.log('Meditation generated successfully:', { 
-      id: meditation.id,
-      audioUrl: meditation.audioUrl ? 'present' : 'missing',
-      duration: meditation.duration
-    });
+    let meditation;
+    try {
+      meditation = await generateMeditation(feeling, duration, userId);
+      console.log('Meditation generated successfully:', { 
+        id: meditation.id,
+        audioUrl: meditation.audioUrl ? 'present' : 'missing',
+        duration: meditation.duration
+      });
+    } catch (error) {
+      console.error('Error generating meditation:', error);
+      return res.status(500).json({ 
+        error: 'Failed to generate meditation',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        details: error instanceof Error ? error.stack : undefined
+      });
+    }
 
     // Increment meditation count
-    await incrementMeditationCount(userId);
+    try {
+      await incrementMeditationCount(userId);
+    } catch (error) {
+      console.error('Error incrementing meditation count:', error);
+      // Don't fail the request if this fails, but log it
+    }
     
     res.status(200).json(meditation);
   } catch (error) {

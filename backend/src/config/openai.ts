@@ -70,8 +70,12 @@ Session Length: ${duration} minutes
 
 Please generate the meditation script, including [pause Xs] tags wherever needed.`;
 
-    console.log('Sending to OpenAI with prompts:', { systemPrompt, userPrompt });
+    console.log('=== OpenAI Request Details ===');
+    console.log('System Prompt Length:', systemPrompt.length);
+    console.log('User Prompt Length:', userPrompt.length);
+    console.log('Total Tokens (estimated):', Math.ceil((systemPrompt.length + userPrompt.length) / 4));
 
+    console.log('Sending to OpenAI...');
     const completion = await openai.chat.completions.create({
       model: "gpt-4",
       messages: [
@@ -82,12 +86,18 @@ Please generate the meditation script, including [pause Xs] tags wherever needed
       max_tokens: 1200,
     });
 
-    const meditationText = completion.choices[0].message.content || '';
-    
     console.log('=== OpenAI Response ===');
-    console.log('Generated Meditation:', meditationText);
-    console.log('Usage:', completion.usage);
     console.log('Model:', completion.model);
+    console.log('Usage:', {
+      prompt_tokens: completion.usage?.prompt_tokens,
+      completion_tokens: completion.usage?.completion_tokens,
+      total_tokens: completion.usage?.total_tokens
+    });
+    console.log('Finish Reason:', completion.choices[0].finish_reason);
+    
+    const meditationText = completion.choices[0].message.content || '';
+    console.log('Generated Text Length:', meditationText.length);
+    console.log('First 100 characters:', meditationText.substring(0, 100));
     console.log('=== End Response ===');
 
     if (!meditationText) {
@@ -96,7 +106,14 @@ Please generate the meditation script, including [pause Xs] tags wherever needed
 
     return meditationText;
   } catch (error) {
-    console.error('Error generating meditation text:', error);
+    console.error('=== Error in OpenAI Generation ===');
+    if (error instanceof Error) {
+      console.error('Error Type:', error.constructor.name);
+      console.error('Error Message:', error.message);
+      console.error('Error Stack:', error.stack);
+    } else {
+      console.error('Unknown Error:', error);
+    }
     throw error;
   }
 } 

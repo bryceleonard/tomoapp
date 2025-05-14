@@ -7,40 +7,46 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID!;
 
+// Helper function to get or create a Stripe customer
+async function getOrCreateCustomer(userId: string, email?: string): Promise<string> {
+  const userSubscription = await getUserSubscription(userId);
+  
+  // If user already has a Stripe customer ID, return it
+  if (userSubscription.stripeCustomerId) {
+    return userSubscription.stripeCustomerId;
+  }
+
+  // Create new Stripe customer
+  console.log('Creating new Stripe customer for user:', userId);
+  const customer = await stripe.customers.create({
+    metadata: { userId },
+    email: email
+  });
+
+  // Update user's subscription with the new customer ID
+  await updateSubscriptionStatus(
+    userId,
+    customer.id,
+    '' // No subscription ID yet
+  );
+
+  return customer.id;
+}
+
 export async function createSetupIntent(userId: string, email?: string): Promise<{ clientSecret: string; ephemeralKey: string }> {
   console.log('Creating setup intent for user:', { userId, email });
   
-  const userSubscription = await getUserSubscription(userId);
-  console.log('Current user subscription:', userSubscription);
-  
-  // Create or get Stripe customer
-  let customerId = userSubscription.stripeCustomerId;
-  if (!customerId) {
-    console.log('Creating new Stripe customer...');
-    const customer = await stripe.customers.create({
-      metadata: { userId },
-      email: email
-    });
-    customerId = customer.id;
-    console.log('Created new Stripe customer:', customerId);
-  } else if (email) {
-    console.log('Updating existing customer email:', customerId);
-    await stripe.customers.update(customerId, { email });
-  }
+  // Get or create Stripe customer
+  const customerId = await getOrCreateCustomer(userId, email);
+  console.log('Using Stripe customer:', customerId);
 
-  console.log('Creating ephemeral key for customer:', customerId);
-  // Create ephemeral key with required permissions
+  // Create ephemeral key
   const ephemeralKey = await stripe.ephemeralKeys.create(
     { customer: customerId },
     { apiVersion: '2025-04-30.basil' }
   );
-  console.log('Created ephemeral key:', {
-    keyLength: ephemeralKey.secret?.length,
-    keyPrefix: ephemeralKey.secret?.substring(0, 10)
-  });
 
-  console.log('Creating setup intent...');
-  // Create a SetupIntent with specific payment method types
+  // Create setup intent
   const setupIntent = await stripe.setupIntents.create({
     customer: customerId,
     payment_method_types: ['card'],
@@ -51,12 +57,6 @@ export async function createSetupIntent(userId: string, email?: string): Promise
       }
     },
     metadata: { userId }
-  });
-  console.log('Created setup intent:', {
-    id: setupIntent.id,
-    status: setupIntent.status,
-    hasClientSecret: !!setupIntent.client_secret,
-    paymentMethodTypes: setupIntent.payment_method_types
   });
 
   return {

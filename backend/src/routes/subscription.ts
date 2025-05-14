@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { createSetupIntent } from '../services/stripe';
-import { getUserSubscription, updateSubscriptionStatus } from '../services/userSubscription';
+import { getUserSubscription } from '../services/userSubscription';
 import { auth } from '../config/firebase';
 import { db } from '../config/firebase';
 import * as admin from 'firebase-admin';
@@ -104,46 +104,12 @@ router.post('/create-setup-intent', authenticateUser, async (req, res) => {
       return res.status(401).json({ error: 'User not authenticated' });
     }
 
-    // Get or create Stripe customer
-    let customerId;
-    const userSubscription = await db.collection('userSubscriptions').doc(userId).get();
-    const subscriptionData = userSubscription.data();
-
-    if (subscriptionData?.stripeCustomerId) {
-      customerId = subscriptionData.stripeCustomerId;
-    } else {
-      const user = await admin.auth().getUser(userId);
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { userId }
-      });
-      customerId = customer.id;
-      
-      // Save customer ID to Firestore
-      await db.collection('userSubscriptions').doc(userId).set({
-        stripeCustomerId: customerId,
-        isPremium: false,
-        meditationCount: 0,
-        lastYearlyReset: new Date()
-      }, { merge: true });
-    }
-
-    // Create ephemeral key
-    const ephemeralKey = await stripe.ephemeralKeys.create(
-      { customer: customerId },
-      { apiVersion: '2025-04-30.basil' }
-    );
-
-    // Create setup intent
-    const setupIntent = await stripe.setupIntents.create({
-      customer: customerId,
-      payment_method_types: ['card'],
-      metadata: { userId }
-    });
+    const user = await admin.auth().getUser(userId);
+    const { clientSecret, ephemeralKey } = await createSetupIntent(userId, user.email);
 
     res.json({
-      clientSecret: setupIntent.client_secret,
-      ephemeralKey: ephemeralKey
+      clientSecret,
+      ephemeralKey
     });
   } catch (error) {
     console.error('Error creating setup intent:', error);

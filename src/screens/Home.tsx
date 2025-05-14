@@ -36,24 +36,44 @@ export default function Home() {
   }, [isFocused]);
 
   const fetchSubscriptionStatus = async () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
+    const MAX_RETRIES = 3;
+    const RETRY_DELAY = 1000; // 1 second
 
-      console.log('Fetching subscription status...');
-      const response = await fetch(`${API_BASE_URL}/api/subscription/status`, {
-        headers: {
-          'Authorization': `Bearer ${await currentUser.getIdToken()}`
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const currentUser = auth.currentUser;
+        if (!currentUser) return;
+
+        console.log(`Fetching subscription status (attempt ${attempt}/${MAX_RETRIES})...`);
+        const response = await fetch(`${API_BASE_URL}/api/subscription/status`, {
+          headers: {
+            'Authorization': `Bearer ${await currentUser.getIdToken()}`
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('Subscription status error:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorData
+          });
+          throw new Error(`Failed to fetch subscription status: ${response.statusText}`);
         }
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch subscription status');
-      
-      const data = await response.json();
-      console.log('Subscription data:', data);
-      setSubscription(data);
-    } catch (error) {
-      console.error('Error fetching subscription status:', error);
+        
+        const data = await response.json();
+        console.log('Subscription data:', data);
+        setSubscription(data);
+        return; // Success, exit the retry loop
+      } catch (error) {
+        console.error(`Attempt ${attempt} failed:`, error);
+        if (attempt === MAX_RETRIES) {
+          console.error('All retry attempts failed');
+          return;
+        }
+        // Wait before retrying
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+      }
     }
   };
 

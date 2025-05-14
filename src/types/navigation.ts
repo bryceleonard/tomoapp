@@ -6,14 +6,18 @@ export interface Meditation {
   meditationText: string;
   audioUrl: string;
   audioDuration: number;
-  createdAt: Date;
+  createdAt: string;
 }
 
 export type RootStackParamList = {
   Login: undefined;
   Signup: undefined;
-  DrawerNav: undefined;
+  DrawerNav: {
+    screen?: string;
+  };
   Home: undefined;
   Library: undefined;
-  Meditation: { feeling: string; duration: number } | { meditation: Meditation };
+  Meditation: { meditation: Meditation };
+  Upgrade: undefined;
+  Logout: undefined;
 }; 

@@ -4,8 +4,7 @@ import { Button, Text } from 'react-native-paper';
 import { auth } from '../firebase/firebaseConfig';
 import { BlurView } from 'expo-blur';
 import { useStripe } from '@stripe/stripe-react-native';
-
-const API_URL = 'http://192.168.0.33:3000';
+import { API_BASE_URL } from '../config/api';
 
 interface UpgradeModalProps {
   visible: boolean;
@@ -23,7 +22,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ visible, onClose, on
       console.log('Starting subscription flow...');
 
       // Step 1: Create setup intent
-      const setupResponse = await fetch(`${API_URL}/api/subscription/create-setup-intent`, {
+      const setupResponse = await fetch(`${API_BASE_URL}/api/subscription/create-setup-intent`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`,
@@ -68,7 +67,7 @@ export const UpgradeModal: React.FC<UpgradeModalProps> = ({ visible, onClose, on
       await new Promise(resolve => setTimeout(resolve, 2000));
 
       // Step 5: Create subscription
-      const subscriptionResponse = await fetch(`${API_URL}/api/subscription/create`, {
+      const subscriptionResponse = await fetch(`${API_BASE_URL}/api/subscription/create`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${await auth.currentUser?.getIdToken()}`,
