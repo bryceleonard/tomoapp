@@ -10,6 +10,7 @@ import Signup from './src/screens/Signup';
 import Home from './src/screens/Home';
 import MeditationScreen from './src/screens/MeditationScreen';
 import Library from './src/screens/Library';
+import UpgradeScreen from './src/screens/UpgradeScreen';
 import { RootStackParamList } from './src/types/navigation';
 import { useFonts } from 'expo-font';
 import { Feather } from '@expo/vector-icons';
@@ -37,14 +38,6 @@ function TomoEssentials() {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
       <Text style={{ fontSize: 24 }}>Tomo Essentials (Coming Soon)</Text>
-    </View>
-  );
-}
-
-function UpgradeScreen() {
-  return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text style={{ fontSize: 24 }}>Upgrade (Coming Soon)</Text>
     </View>
   );
 }

@@ -5,7 +5,6 @@ import { auth } from '../firebase/firebaseConfig';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import { UpgradeModal } from '../components/UpgradeModal';
 import { Button, Text } from 'react-native-paper';
 
 // TODO: Move this to a config file
@@ -26,7 +25,6 @@ export default function Home() {
   const [subscription, setSubscription] = useState<UserSubscription | null>(null);
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const isFocused = useIsFocused();
-  const [upgradeModalVisible, setUpgradeModalVisible] = useState(false);
 
   useEffect(() => {
     if (isFocused) {
@@ -77,9 +75,8 @@ export default function Home() {
     }
   };
 
-  const handleUpgradeSuccess = () => {
-    setUpgradeModalVisible(false);
-    fetchSubscriptionStatus();
+  const handleUpgradePress = () => {
+    navigation.navigate('Upgrade');
   };
 
   const handleGenerate = async () => {
@@ -160,7 +157,7 @@ export default function Home() {
         {!subscription?.isPremium && (
           <TouchableOpacity 
             style={styles.upgradeButton}
-            onPress={() => setUpgradeModalVisible(true)}
+            onPress={handleUpgradePress}
           >
             <Text style={styles.upgradeButtonText}>Upgrade</Text>
           </TouchableOpacity>
@@ -215,12 +212,6 @@ export default function Home() {
           )}
         </TouchableOpacity>
       </View>
-
-      <UpgradeModal
-        visible={upgradeModalVisible}
-        onClose={() => setUpgradeModalVisible(false)}
-        onSuccess={handleUpgradeSuccess}
-      />
     </ScrollView>
   );
 }
