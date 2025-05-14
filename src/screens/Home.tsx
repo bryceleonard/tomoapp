@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking, Keyboard } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -57,25 +57,9 @@ export default function Home() {
     }
   };
 
-  const handleUpgrade = async () => {
-    try {
-      const currentUser = auth.currentUser;
-      if (!currentUser) return;
-
-      const response = await fetch(`${API_BASE_URL}/api/subscription/create-checkout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${await currentUser.getIdToken()}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Failed to create checkout session');
-      
-      const { url } = await response.json();
-      await Linking.openURL(url);
-    } catch (error) {
-      console.error('Error creating checkout session:', error);
-    }
+  const handleUpgradeSuccess = () => {
+    setUpgradeModalVisible(false);
+    fetchSubscriptionStatus();
   };
 
   const handleGenerate = async () => {
@@ -141,11 +125,6 @@ export default function Home() {
     }
   };
 
-  const handleUpgradeSuccess = () => {
-    setUpgradeModalVisible(false);
-    fetchSubscriptionStatus();
-  };
-
   if (!isReady) {
     return (
       <View style={styles.container}>
@@ -155,34 +134,17 @@ export default function Home() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text variant="headlineMedium">Tomo</Text>
-        <View style={styles.headerButtons}>
-          <Button
-            mode="text"
-            onPress={() => navigation.navigate('Library')}
-            style={styles.headerButton}
+        <Text style={styles.greeting}>Hello, {auth.currentUser?.displayName || 'there'}</Text>
+        {!subscription?.isPremium && (
+          <TouchableOpacity 
+            style={styles.upgradeButton}
+            onPress={() => setUpgradeModalVisible(true)}
           >
-            Library
-          </Button>
-          {!subscription?.isPremium && (
-            <Button
-              mode="text"
-              onPress={() => setUpgradeModalVisible(true)}
-              style={styles.headerButton}
-            >
-              Upgrade
-            </Button>
-          )}
-          <Button
-            mode="text"
-            onPress={() => signOut(auth)}
-            style={styles.headerButton}
-          >
-            Logout
-          </Button>
-        </View>
+            <Text style={styles.upgradeButtonText}>Upgrade</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       <View style={styles.formContainer}>
@@ -192,9 +154,11 @@ export default function Home() {
           value={feeling}
           onChangeText={setFeeling}
           placeholder="e.g., feeling anxious about work, struggling with sleep..."
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
+          placeholderTextColor="#686868"
+          multiline={false}
+          returnKeyType="done"
+          onSubmitEditing={() => Keyboard.dismiss()}
+          blurOnSubmit={true}
         />
 
         <Text style={styles.label}>Duration</Text>
@@ -237,106 +201,113 @@ export default function Home() {
         onClose={() => setUpgradeModalVisible(false)}
         onSuccess={handleUpgradeSuccess}
       />
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
     paddingTop: 40,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#2c3e50',
+  greeting: {
+    fontFamily: 'JosefinSans-Bold',
+    fontSize: 28,
+    color: '#111',
   },
-  headerButtons: {
-    flexDirection: 'row',
+  upgradeButton: {
+    backgroundColor: '#AEE0B0',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+    height: 40,
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  headerButton: {
-    padding: 8,
-  },
-  headerButtonText: {
-    color: '#6c757d',
-    fontSize: 16,
   },
   upgradeButtonText: {
-    color: '#007AFF',
+    fontFamily: 'JosefinSans-Bold',
     fontSize: 16,
-    fontWeight: '600',
+    color: '#111',
   },
   formContainer: {
-    padding: 20,
+    padding: 24,
   },
   label: {
+    fontFamily: 'JosefinSans-Bold',
     fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-    marginBottom: 8,
+    color: '#111',
+    marginBottom: 25,
   },
   textInput: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#f1f1f1',
+    borderTopLeftRadius: 15,
+    borderTopRightRadius: 15,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    paddingHorizontal: 18,
+    fontFamily: 'JosefinSans-Regular',
     fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
     marginBottom: 24,
-    minHeight: 100,
+    borderBottomWidth: 2,
+    borderBottomColor: '#686868',
+    color: '#222',
+    minHeight: 55,
   },
   toggleContainer: {
-    alignItems: 'center',
+    alignItems: 'stretch',
     marginBottom: 32,
   },
   toggleBackground: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
+    backgroundColor: '#f1f1f1',
+    borderRadius: 15,
+    borderWidth: 2,
+    borderColor: '#686868',
     overflow: 'hidden',
+    height: 55,
+    width: '100%',
   },
   toggleOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    minWidth: 60,
+    flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   toggleOptionActive: {
-    backgroundColor: '#2c3e50',
+    backgroundColor: '#EEEAAF',
   },
   toggleText: {
-    fontSize: 18,
-    color: '#6c757d',
-    fontWeight: '600',
+    fontFamily: 'JosefinSans-Bold',
+    fontSize: 16,
+    color: '#686868',
   },
   toggleTextActive: {
-    color: '#ffffff',
+    color: '#111',
   },
   generateButton: {
-    backgroundColor: '#2c3e50',
+    backgroundColor: '#f1f1f1',
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 15,
     alignItems: 'center',
+    height: 55,
+    justifyContent: 'center',
+    width: 280,
+    alignSelf: 'center',
+    marginTop: 150,
   },
   generateButtonDisabled: {
     opacity: 0.7,
   },
   generateButtonText: {
-    color: '#ffffff',
+    fontFamily: 'JosefinSans-Bold',
     fontSize: 18,
-    fontWeight: '600',
+    color: '#000',
+    fontWeight: 'bold',
   },
 });

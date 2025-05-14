@@ -79,9 +79,7 @@ export default function Library() {
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Your Library</Text>
-        </View>
+
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#2c3e50" />
         </View>
@@ -92,7 +90,7 @@ export default function Library() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Your Library</Text>
+        <Text style={styles.title}>My Library</Text>
       </View>
 
       {meditations.length === 0 ? (
@@ -115,14 +113,12 @@ export default function Library() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: 'transparent',
   },
   header: {
     padding: 20,
     paddingTop: 40,
-    backgroundColor: '#ffffff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e9ecef',
+  
   },
   title: {
     fontSize: 24,
@@ -149,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   meditationFeeling: {
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '600',
     color: '#2c3e50',
   },

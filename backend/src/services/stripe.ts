@@ -7,41 +7,61 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 const PREMIUM_PRICE_ID = process.env.STRIPE_PREMIUM_PRICE_ID!;
 
-export async function createPaymentIntent(userId: string, email?: string): Promise<{ clientSecret: string }> {
+export async function createSetupIntent(userId: string, email?: string): Promise<{ clientSecret: string; ephemeralKey: string }> {
+  console.log('Creating setup intent for user:', { userId, email });
+  
   const userSubscription = await getUserSubscription(userId);
+  console.log('Current user subscription:', userSubscription);
   
   // Create or get Stripe customer
   let customerId = userSubscription.stripeCustomerId;
   if (!customerId) {
+    console.log('Creating new Stripe customer...');
     const customer = await stripe.customers.create({
       metadata: { userId },
       email: email
     });
     customerId = customer.id;
+    console.log('Created new Stripe customer:', customerId);
   } else if (email) {
+    console.log('Updating existing customer email:', customerId);
     await stripe.customers.update(customerId, { email });
   }
 
-  // Cancel any existing incomplete subscriptions
-  const existingSubscriptions = await stripe.subscriptions.list({
-    customer: customerId,
-    status: 'incomplete',
-    limit: 1
+  console.log('Creating ephemeral key for customer:', customerId);
+  // Create ephemeral key with required permissions
+  const ephemeralKey = await stripe.ephemeralKeys.create(
+    { customer: customerId },
+    { apiVersion: '2025-04-30.basil' }
+  );
+  console.log('Created ephemeral key:', {
+    keyLength: ephemeralKey.secret?.length,
+    keyPrefix: ephemeralKey.secret?.substring(0, 10)
   });
 
-  if (existingSubscriptions.data.length > 0) {
-    await stripe.subscriptions.cancel(existingSubscriptions.data[0].id);
-  }
-
-  // Create a SetupIntent to collect payment method
+  console.log('Creating setup intent...');
+  // Create a SetupIntent with specific payment method types
   const setupIntent = await stripe.setupIntents.create({
     customer: customerId,
     payment_method_types: ['card'],
+    usage: 'off_session',
+    payment_method_options: {
+      card: {
+        request_three_d_secure: 'automatic'
+      }
+    },
     metadata: { userId }
+  });
+  console.log('Created setup intent:', {
+    id: setupIntent.id,
+    status: setupIntent.status,
+    hasClientSecret: !!setupIntent.client_secret,
+    paymentMethodTypes: setupIntent.payment_method_types
   });
 
   return {
-    clientSecret: setupIntent.client_secret!
+    clientSecret: setupIntent.client_secret!,
+    ephemeralKey: ephemeralKey.secret!
   };
 }
 

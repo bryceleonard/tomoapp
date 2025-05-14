@@ -12,6 +12,7 @@ export interface Meditation {
 export type RootStackParamList = {
   Login: undefined;
   Signup: undefined;
+  DrawerNav: undefined;
   Home: undefined;
   Library: undefined;
   Meditation: { feeling: string; duration: number } | { meditation: Meditation };

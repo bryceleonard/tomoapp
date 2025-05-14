@@ -1,0 +1,7 @@
+import { EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY } from '@env';
+
+if (!EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY) {
+  throw new Error('EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY is not defined in environment variables');
+}
+
+export const STRIPE_PUBLISHABLE_KEY = EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY; 

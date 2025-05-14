@@ -10,6 +10,12 @@ import webhookRoutes from './routes/webhooks';
 // Load environment variables
 dotenv.config();
 
+// Debug logging for Stripe configuration
+console.log('=== Environment Variables ===');
+console.log('Stripe Key present:', !!process.env.STRIPE_SECRET_KEY);
+console.log('Stripe Key length:', process.env.STRIPE_SECRET_KEY?.length);
+console.log('Stripe Premium Price ID present:', !!process.env.STRIPE_PREMIUM_PRICE_ID);
+
 const app = express();
 const port = process.env.PORT || 3000;
 
