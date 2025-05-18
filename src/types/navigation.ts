@@ -1,11 +1,8 @@
 export interface Meditation {
   id: string;
-  userId: string;
-  feeling: string;
-  duration: number;
-  meditationText: string;
+  text: string;
   audioUrl: string;
-  audioDuration: number;
+  duration: number;
   createdAt: string;
 }
 
@@ -15,9 +12,15 @@ export type RootStackParamList = {
   DrawerNav: {
     screen?: string;
   };
+  Meditation: {
+    meditation?: Meditation;
+    isLoading?: boolean;
+    feeling?: string;
+    duration?: number;
+    userId?: string;
+  };
+  Upgrade: undefined;
   Home: undefined;
   Library: undefined;
-  Meditation: { meditation: Meditation };
-  Upgrade: undefined;
   Logout: undefined;
 }; 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking, Keyboard } from 'react-native';
+import { View, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Linking, Keyboard, Alert } from 'react-native';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
 import { useNavigation, useIsFocused } from '@react-navigation/native';
@@ -93,6 +93,7 @@ export default function Home() {
       }
 
       // Check if user can generate meditation
+      console.log('Fetching subscription status...');
       const response = await fetch(`${API_BASE_URL}/api/subscription/status`, {
         headers: {
           'Authorization': `Bearer ${await currentUser.getIdToken()}`
@@ -100,43 +101,44 @@ export default function Home() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to check subscription status');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Subscription status error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(`Failed to fetch subscription status: ${response.statusText}`);
       }
 
       const subscription = await response.json();
+      console.log('Subscription status:', subscription);
+
       if (!subscription.isPremium && subscription.meditationCount >= 2) {
         throw new Error('Free trial limit reached. Please upgrade to continue.');
       }
 
-      console.log('Generating meditation for:', { feeling, duration });
-      
-      console.log('Making API request...');
-      const meditationResponse = await fetch(`${API_BASE_URL}/api/meditation/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await currentUser.getIdToken()}`
-        },
-        body: JSON.stringify({
-          feeling,
-          duration,
-          userId: currentUser.uid,
-        }),
+      // Navigate to meditation screen with loading state
+      console.log('Navigating to meditation screen with params:', {
+        isLoading: true,
+        feeling,
+        duration,
+        userId: currentUser.uid
       });
 
-      console.log('Response received:', meditationResponse.status);
-      if (!meditationResponse.ok) {
-        throw new Error(`HTTP error! status: ${meditationResponse.status}`);
-      }
+      navigation.navigate('Meditation', { 
+        isLoading: true,
+        feeling,
+        duration,
+        userId: currentUser.uid
+      });
 
-      const meditation = await meditationResponse.json();
-      console.log('Meditation generated:', meditation);
-      
-      // Navigate to meditation screen with the generated meditation
-      navigation.navigate('Meditation', { meditation });
     } catch (error) {
       console.error('Error in handleGenerate:', error);
-      // TODO: Show error to user
+      // Show error to user
+      Alert.alert(
+        'Error',
+        error instanceof Error ? error.message : 'Failed to generate meditation. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
