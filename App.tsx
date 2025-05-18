@@ -86,11 +86,11 @@ function CustomDrawerContent(props: any) {
                 end={{ x: 1, y: 1 }}
                 style={{ padding: 16, borderRadius: 12 }}
               >
-                <Text style={{ fontFamily: 'JosefinSans-Bold', fontSize: 18, color: '#111' }}>{label}</Text>
+                <Text style={{ fontSize: 18, color: '#111' }}>{label}</Text>
               </LinearGradient>
             ) : (
               <View style={{ padding: 16, borderRadius: 12 }}>
-                <Text style={{ fontFamily: 'JosefinSans-Bold', fontSize: 18, color: '#111' }}>{label}</Text>
+                <Text style={{ fontSize: 18, color: '#111' }}>{label}</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -136,7 +136,7 @@ function DrawerNav() {
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="My Library" component={Library} />
       <Drawer.Screen name="Tomo Essentials" component={TomoEssentials} />
-      {!subscription?.isPremium && (
+      {subscription && !subscription.isPremium && (
         <Drawer.Screen name="Upgrade" component={UpgradeScreen} />
       )}
       <Drawer.Screen name="Logout" component={LogoutScreen} />
@@ -160,13 +160,6 @@ function Navigation() {
 }
 
 export default function App() {
-  const [fontsLoaded] = useFonts({
-    'JosefinSlab-Bold': require('./src/assets/fonts/JosefinSlab-Bold.ttf'),
-    'JosefinSlab-Regular': require('./src/assets/fonts/JosefinSlab-Regular.ttf'),
-    'JosefinSans-Bold': require('./src/assets/fonts/JosefinSans-Bold.ttf'),
-    'JosefinSans-Regular': require('./src/assets/fonts/JosefinSans-Regular.ttf'),
-  });
-
   return (
     <StripeProvider publishableKey={STRIPE_PUBLISHABLE_KEY}>
       <View style={{ flex: 1, position: 'relative' }}>
@@ -209,11 +202,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     paddingBottom: 16,
-    // borderBottomWidth: 2,
-    // borderBottomColor: '#888',
   },
   headerLogo: {
-    fontFamily: 'JosefinSlab-Bold',
     fontSize: 40,
     color: '#111',
   },

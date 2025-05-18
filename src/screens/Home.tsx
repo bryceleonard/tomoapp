@@ -154,7 +154,7 @@ export default function Home() {
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.greeting}>Hello, {auth.currentUser?.displayName || 'there'}</Text>
-        {!subscription?.isPremium && (
+        {subscription && !subscription.isPremium && (
           <TouchableOpacity 
             style={styles.upgradeButton}
             onPress={handleUpgradePress}

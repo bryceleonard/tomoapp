@@ -1,5 +1,5 @@
-import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Animated, Easing } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, StyleSheet, Animated } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const circles = [
@@ -11,37 +11,35 @@ const circles = [
 ];
 
 export default function AnimatedBackground() {
-  const scales = useRef(circles.map(() => new Animated.Value(1))).current;
+  const animations = useRef(circles.map(() => new Animated.Value(1))).current;
 
   useEffect(() => {
-    scales.forEach((scale, i) => {
+    circles.forEach((_, i) => {
       Animated.loop(
         Animated.sequence([
-          Animated.timing(scale, {
+          Animated.timing(animations[i], {
             toValue: 1.1,
             duration: 3000,
             delay: circles[i].delay,
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.cubic),
           }),
-          Animated.timing(scale, {
-            toValue: 1.0,
+          Animated.timing(animations[i], {
+            toValue: 1,
             duration: 3000,
             useNativeDriver: true,
-            easing: Easing.inOut(Easing.cubic),
           }),
         ])
       ).start();
     });
-  }, [scales]);
+  }, []);
 
   return (
-    <View style={[StyleSheet.absoluteFillObject, { position: 'absolute' }]} pointerEvents="box-none">
+    <View style={styles.animatedBackground}>
       <LinearGradient
-        colors={["#EEEAAF", "#63B4D1"]}
+        colors={['#EEEAAF', '#63B4D1']}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
+        style={styles.gradientOverlay}
       />
       {circles.map((circle, i) => (
         <Animated.View
@@ -54,10 +52,9 @@ export default function AnimatedBackground() {
               top: circle.top,
               left: circle.left,
               opacity: circle.opacity,
-              transform: [{ scale: scales[i] }],
+              transform: [{ scale: animations[i] }],
             },
           ]}
-          pointerEvents="none"
         />
       ))}
     </View>
@@ -65,9 +62,27 @@ export default function AnimatedBackground() {
 }
 
 const styles = StyleSheet.create({
+  animatedBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+    pointerEvents: 'none',
+  },
+  gradientOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+  },
   circle: {
     position: 'absolute',
     backgroundColor: '#fff',
-    borderRadius: 9999,
+    borderRadius: 1000,
+    transformOrigin: 'center',
   },
-}); 
+});
+
